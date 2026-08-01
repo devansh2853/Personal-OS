@@ -16,31 +16,31 @@ The domain does not manage nutrition or medication.
 
 ## Supplement
 
-Represents a supplement that can be scheduled by the user.
+Represents a supplement available for tracking within the application.
 
 ### Attributes
 
-| Attribute | Type       | Description                                         |
-| --------- | ---------- | --------------------------------------------------- |
-| id        | Identifier | Unique identifier                                   |
-| name      | String     | Supplement name                                     |
-| dosage    | String     | Recommended dosage (e.g., 5000 IU, 5 g, 2 capsules) |
+| Attribute | Type       | Description       |
+| --------- | ---------- | ----------------- |
+| id        | Identifier | Unique identifier |
+| name      | String     | Supplement name   |
 
 ---
 
 ## SupplementSchedule
 
-Represents a recurring schedule for taking a supplement.
+Represents a user's recurring schedule for taking a supplement.
 
 ### Attributes
 
-| Attribute    | Type       | Description                              |
-| ------------ | ---------- | ---------------------------------------- |
-| id           | Identifier | Unique identifier                        |
-| supplement   | Supplement | Referenced supplement                    |
-| frequency    | Frequency  | How often the supplement should be taken |
-| reminderTime | Time       | Scheduled reminder time                  |
-| isActive     | Boolean    | Indicates whether the schedule is active |
+| Attribute    | Type       | Description                                         |
+| ------------ | ---------- | --------------------------------------------------- |
+| id           | Identifier | Unique identifier                                   |
+| supplement   | Supplement | Referenced supplement                               |
+| dosage       | String     | Dosage to be taken (e.g., 5000 IU, 5 g, 2 capsules) |
+| frequency    | Frequency  | How often the supplement should be taken            |
+| reminderTime | Time       | Scheduled reminder time                             |
+| isActive     | Boolean    | Indicates whether the schedule is active            |
 
 ---
 
@@ -50,11 +50,11 @@ Represents a completed supplement intake.
 
 ### Attributes
 
-| Attribute  | Type       | Description                            |
-| ---------- | ---------- | -------------------------------------- |
-| id         | Identifier | Unique identifier                      |
-| supplement | Supplement | Supplement taken                       |
-| takenAt    | DateTime   | Date and time the supplement was taken |
+| Attribute | Type               | Description                                  |
+| --------- | ------------------ | -------------------------------------------- |
+| id        | Identifier         | Unique identifier                            |
+| schedule  | SupplementSchedule | Schedule from which this intake was recorded |
+| takenAt   | DateTime           | Date and time the supplement was taken       |
 
 ---
 
@@ -77,19 +77,23 @@ Example values:
 ```text
 Supplement
 │
-├── referenced by
-│
-├── SupplementSchedule
-│
-└── SupplementLog
+└── referenced by
+     │
+     ▼
+SupplementSchedule
+     │
+     └── generates
+             │
+             ▼
+      SupplementLog
 ```
 
 ### Relationship Summary
 
-| Source             | Relationship | Target     |
-| ------------------ | ------------ | ---------- |
-| SupplementSchedule | references   | Supplement |
-| SupplementLog      | references   | Supplement |
+| Source             | Relationship | Target             |
+| ------------------ | ------------ | ------------------ |
+| SupplementSchedule | references   | Supplement         |
+| SupplementLog      | references   | SupplementSchedule |
 
 ---
 
@@ -106,8 +110,9 @@ The Supplement Tracking domain owns:
 # 6. Business Rules
 
 - Every SupplementSchedule shall reference exactly one Supplement.
-- Every SupplementLog shall reference exactly one Supplement.
+- Every SupplementSchedule defines its own dosage.
 - A Supplement may have multiple schedules.
+- Every SupplementLog shall reference exactly one SupplementSchedule.
 - A SupplementSchedule may generate reminder notifications.
 - SupplementLogs represent historical intake and are immutable once recorded.
 
@@ -115,12 +120,12 @@ The Supplement Tracking domain owns:
 
 # 7. Consumers
 
-| Domain            | Usage                                |
-| ----------------- | ------------------------------------ |
-| Notifications     | Generates reminder notifications     |
-| Dashboard         | Displays today's supplement schedule |
-| Analytics         | Calculates adherence statistics      |
-| AI Coach (Future) | Evaluates supplement adherence       |
+| Domain            | Usage                                                       |
+| ----------------- | ----------------------------------------------------------- |
+| Notifications     | Generates supplement reminder notifications                 |
+| Dashboard         | Displays today's supplement schedule                        |
+| Analytics         | Calculates supplement adherence statistics                  |
+| AI Coach (Future) | Evaluates supplement adherence and provides recommendations |
 
 ---
 
@@ -132,15 +137,20 @@ The following concepts are intentionally excluded from the Supplement Tracking d
 - Prescription tracking
 - Drug interaction analysis
 
+These concerns may be introduced as separate modules in future phases.
+
 ---
 
 # 9. Future Enhancements
 
+The current model is intentionally designed to support future expansion.
+
 Potential future enhancements include:
 
-- Multiple daily doses
+- Multiple reminders per schedule
 - Inventory tracking
 - Low stock reminders
 - Barcode scanning
+- Missed-dose tracking
 - AI adherence recommendations
 - Pharmacy integrations
