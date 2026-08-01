@@ -4,172 +4,130 @@
 
 # 1. Purpose
 
-The Nutrition domain is responsible for managing the food catalog and recording meals consumed by users.
+The Nutrition domain is responsible for managing nutritional goals and providing daily nutritional summaries.
 
-It references foods from the Food catalog while managing meal-specific information such as quantity, serving units, and nutritional snapshots.
+It consumes meal data from the Food & Meal Tracking domain to generate daily nutrition statistics used by dashboards, analytics, and AI features.
 
-The Nutrition domain does not own food definitions.
+The Nutrition domain does not own meal history or food definitions.
 
 ---
 
 # 2. Entities
 
-## Food
+## NutritionGoal
 
-Represents a food item available within the application.
-
-### Attributes
-
-| Attribute     | Type       | Description                             |
-| ------------- | ---------- | --------------------------------------- |
-| id            | Identifier | Unique identifier                       |
-| name          | String     | Food name                               |
-| calories      | Decimal    | Calories for the reference serving      |
-| protein       | Decimal    | Protein for the reference serving       |
-| carbohydrates | Decimal    | Carbohydrates for the reference serving |
-| fat           | Decimal    | Fat for the reference serving           |
-
----
-
-## Meal
-
-Represents a meal consumed by the user.
+Represents the user's daily nutritional targets.
 
 ### Attributes
 
-| Attribute          | Type           | Description                                       |
-| ------------------ | -------------- | ------------------------------------------------- |
-| id                 | Identifier     | Unique identifier                                 |
-| name               | String         | Meal name (Breakfast, Lunch, Dinner, Snack, etc.) |
-| consumedAt         | DateTime       | Date and time the meal was consumed               |
-| mealItems          | List<MealItem> | Foods included in the meal                        |
-| totalCalories      | Decimal        | Total calories for the meal                       |
-| totalProtein       | Decimal        | Total protein for the meal                        |
-| totalCarbohydrates | Decimal        | Total carbohydrates for the meal                  |
-| totalFat           | Decimal        | Total fat for the meal                            |
+| Attribute          | Type       | Description               |
+| ------------------ | ---------- | ------------------------- |
+| id                 | Identifier | Unique identifier         |
+| calorieTarget      | Decimal    | Daily calorie target      |
+| proteinTarget      | Decimal    | Daily protein target      |
+| carbohydrateTarget | Decimal    | Daily carbohydrate target |
+| fatTarget          | Decimal    | Daily fat target          |
 
 ---
 
-## MealItem
+## DailyNutrition
 
-Represents a food entry within a meal.
+Represents the nutritional summary for a single day.
+
+> **Note:** DailyNutrition is a materialized projection generated from Meal data. It is not the source of truth.
 
 ### Attributes
 
-| Attribute     | Type        | Description                            |
-| ------------- | ----------- | -------------------------------------- |
-| id            | Identifier  | Unique identifier                      |
-| food          | Food        | Reference to the Food catalog          |
-| quantity      | Decimal     | Quantity consumed                      |
-| servingUnit   | ServingUnit | Unit of measurement used               |
-| calories      | Decimal     | Calories contributed by this food      |
-| protein       | Decimal     | Protein contributed by this food       |
-| carbohydrates | Decimal     | Carbohydrates contributed by this food |
-| fat           | Decimal     | Fat contributed by this food           |
+| Attribute          | Type       | Description                      |
+| ------------------ | ---------- | -------------------------------- |
+| id                 | Identifier | Unique identifier                |
+| date               | Date       | Date represented by this summary |
+| totalCalories      | Decimal    | Total calories consumed          |
+| totalProtein       | Decimal    | Total protein consumed           |
+| totalCarbohydrates | Decimal    | Total carbohydrates consumed     |
+| totalFat           | Decimal    | Total fat consumed               |
 
 ---
 
-# 3. Supporting Value Objects / Enums
-
-## ServingUnit
-
-Represents the unit used to record a food quantity.
-
-Example values:
-
-- Gram
-- Milliliter
-- Serving
-- Piece
-- Scoop
-- Tablespoon
-- Teaspoon
-
----
-
-# 4. Relationships
+# 3. Relationships
 
 ```text
+NutritionGoal
+
+DailyNutrition
+
+        ▲
+        │
+Generated From
+        │
+        ▼
 Meal
-│
-└── contains (1..*)
-    │
-    ▼
-MealItem
-│
-└── references (1)
-    │
-    ▼
-Food
 ```
 
 ### Relationship Summary
 
-| Source   | Relationship | Target   |
-| -------- | ------------ | -------- |
-| Meal     | contains     | MealItem |
-| MealItem | references   | Food     |
+| Source | Relationship | Target         |
+| ------ | ------------ | -------------- |
+| Meal   | generates    | DailyNutrition |
 
 ---
 
-# 5. Ownership
+# 4. Ownership
 
 The Nutrition domain owns:
 
-- Meal
-- MealItem
+- NutritionGoal
+- DailyNutrition
 
-The Food entity is referenced from the Nutrition domain but is not owned by it.
-
----
-
-# 6. Business Rules
-
-- Every Meal shall contain one or more MealItems.
-- Every MealItem shall reference exactly one Food.
-- A Meal shall not contain duplicate Food entries.
-- Quantity shall be recorded using an appropriate ServingUnit.
-- Meal nutrition values shall be stored as a snapshot at the time the meal is recorded.
-- Changes to the Food catalog shall not modify previously recorded meals.
-- Historical Meals are immutable once recorded.
+Meal data is consumed from the Food & Meal Tracking domain.
 
 ---
 
-# 7. Consumers
+# 5. Business Rules
 
-| Domain            | Usage                                                      |
-| ----------------- | ---------------------------------------------------------- |
-| Analytics         | Calculates calorie, protein, carbohydrate, and fat trends  |
-| AI Coach (Future) | Generates dietary recommendations and nutritional insights |
+- Every user shall have one active NutritionGoal.
+- DailyNutrition shall represent the nutritional totals for a single calendar day.
+- DailyNutrition shall be generated from recorded Meals.
+- DailyNutrition shall never be edited directly.
+- Whenever a Meal is created, updated, or deleted, the corresponding DailyNutrition shall be recalculated.
+- Remaining calories and remaining macronutrients are derived from DailyNutrition and NutritionGoal and shall not be persisted.
 
 ---
 
-# 8. Out of Scope
+# 6. Consumers
+
+| Domain            | Usage                                            |
+| ----------------- | ------------------------------------------------ |
+| Dashboard         | Displays daily calorie and macro progress        |
+| Analytics         | Calculates nutritional trends and goal adherence |
+| AI Coach (Future) | Generates personalized dietary recommendations   |
+
+---
+
+# 7. Out of Scope
 
 The following concepts are intentionally excluded from the Nutrition domain.
 
-- Custom foods
+- Meal logging
+- Food catalog management
 - Recipes
-- Daily nutrition summaries
+- Custom foods
 - Micronutrient tracking
-- Meal planning
 
-These concepts may be introduced in future phases.
+These concerns belong to the Food & Meal Tracking domain or future modules.
 
 ---
 
-# 9. Future Enhancements
+# 8. Future Enhancements
 
 The current model is intentionally designed to support future expansion.
 
 Potential future enhancements include:
 
-- Custom foods
-- Recipes
-- Barcode scanning
-- Micronutrient tracking
-- Fiber, sugar, and sodium tracking
-- Meal templates
-- Favorite meals
-- AI meal parsing
-- Daily nutrition aggregation
+- Weekly nutrition summaries
+- Monthly nutrition summaries
+- Nutrition phases (Cut, Bulk, Maintenance)
+- Goal history
+- Dynamic calorie targets
+- Micronutrient goals
+- AI-generated nutrition plans
