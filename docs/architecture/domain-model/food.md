@@ -20,14 +20,16 @@ Represents a food item available within the application.
 
 ### Attributes
 
-| Attribute     | Type       | Description                             |
-| ------------- | ---------- | --------------------------------------- |
-| id            | Identifier | Unique identifier                       |
-| name          | String     | Food name                               |
-| calories      | Decimal    | Calories for the reference serving      |
-| protein       | Decimal    | Protein for the reference serving       |
-| carbohydrates | Decimal    | Carbohydrates for the reference serving |
-| fat           | Decimal    | Fat for the reference serving           |
+| Attribute            | Type        | Description                                        |
+| -------------------- | ----------- | -------------------------------------------------- |
+| id                   | Identifier  | Unique identifier                                  |
+| name                 | String      | Food name                                          |
+| referenceQuantity    | Decimal     | Quantity on which the nutritional values are based |
+| referenceServingUnit | ServingUnit | Unit used for the reference quantity               |
+| calories             | Decimal     | Calories for the reference quantity                |
+| protein              | Decimal     | Protein for the reference quantity                 |
+| carbohydrates        | Decimal     | Carbohydrates for the reference quantity           |
+| fat                  | Decimal     | Fat for the reference quantity                     |
 
 ---
 
