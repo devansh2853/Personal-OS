@@ -50,11 +50,13 @@ Represents a completed supplement intake.
 
 ### Attributes
 
-| Attribute | Type               | Description                                  |
-| --------- | ------------------ | -------------------------------------------- |
-| id        | Identifier         | Unique identifier                            |
-| schedule  | SupplementSchedule | Schedule from which this intake was recorded |
-| takenAt   | DateTime           | Date and time the supplement was taken       |
+| Attribute  | Type                          | Description                                  |
+| ---------- | ----------------------------- | -------------------------------------------- |
+| id         | Identifier                    | Unique identifier                            |
+| supplement | Supplement                    | Supplement that was taken                    |
+| schedule   | SupplementSchedule (Optional) | Schedule from which this intake was recorded |
+| dosage     | String                        | Dosage consumed at the time of intake        |
+| takenAt    | DateTime                      | Date and time the supplement was taken       |
 
 ---
 
@@ -77,15 +79,22 @@ Example values:
 ```text
 Supplement
 │
+├── referenced by
+│       │
+│       ▼
+│  SupplementSchedule
+│
 └── referenced by
-     │
-     ▼
+        │
+        ▼
+   SupplementLog
+
 SupplementSchedule
-     │
-     └── generates
-             │
-             ▼
-      SupplementLog
+        │
+        └── optionally referenced by
+                    │
+                    ▼
+              SupplementLog
 ```
 
 ### Relationship Summary
