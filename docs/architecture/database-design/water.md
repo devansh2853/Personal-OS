@@ -23,6 +23,12 @@ No embedded documents are used within this module.
 
 ---
 
+## User Ownership
+
+All WorkoutTemplates and WorkoutSessions contain a `userId` reference to the User module.
+
+This establishes ownership while allowing the Workout module to remain an independent bounded context.
+
 # 3. Collection Schemas
 
 ## WaterGoal

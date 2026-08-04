@@ -23,6 +23,12 @@ MealItem is an embedded document because it only exists within a Meal.
 
 ---
 
+## User Ownership
+
+All WorkoutTemplates and WorkoutSessions contain a `userId` reference to the User module.
+
+This establishes ownership while allowing the Workout module to remain an independent bounded context.
+
 # 3. Collection Schemas
 
 ## Food
