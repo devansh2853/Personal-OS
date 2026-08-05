@@ -4,11 +4,13 @@
 
 # 1. Purpose
 
-The Food & Meal Tracking module is responsible for storing the application's food catalog and recording meals consumed by users.
+The Food & Meal Tracking module is responsible for storing the application's food catalog, reusable meal templates, and historical meals consumed by users.
 
-The Food collection serves as a reusable catalog of nutritional information, while Meal documents represent immutable historical records of food consumed.
+The Food collection serves as a reusable catalog of nutritional information.
 
-MealItems store nutritional snapshots to preserve historical accuracy even if the Food catalog changes.
+MealTemplates allow users to create reusable meals that can be logged repeatedly.
+
+Meals represent immutable historical records of food consumed, while MealItems store nutritional snapshots to preserve historical accuracy even if the Food catalog changes.
 
 ---
 
@@ -17,17 +19,23 @@ MealItems store nutritional snapshots to preserve historical accuracy even if th
 The module contains the following MongoDB collections.
 
 - Food
+- MealTemplate
 - Meal
 
-MealItem is an embedded document because it only exists within a Meal.
+The following embedded documents are used:
+
+- MealTemplateItem
+- MealItem
 
 ---
 
 ## User Ownership
 
-All WorkoutTemplates and WorkoutSessions contain a `userId` reference to the User module.
+All MealTemplates and Meals contain a `userId` reference to the User module.
 
-This establishes ownership while allowing the Workout module to remain an independent bounded context.
+This establishes ownership while allowing the Food & Meal Tracking module to remain an independent bounded context.
+
+---
 
 # 3. Collection Schemas
 
@@ -61,6 +69,36 @@ This establishes ownership while allowing the Workout module to remain an indepe
 
 ---
 
+## MealTemplate
+
+```javascript
+{
+    _id: ObjectId,
+
+    userId: ObjectId,
+
+    name: String,
+
+    mealItems: [
+        {
+            _id: ObjectId,
+
+            foodId: ObjectId,
+
+            quantity: Number,
+
+            servingUnit: ServingUnit
+        }
+    ],
+
+    createdAt: Date,
+
+    updatedAt: Date
+}
+```
+
+---
+
 ## Meal
 
 ```javascript
@@ -68,6 +106,8 @@ This establishes ownership while allowing the Workout module to remain an indepe
     _id: ObjectId,
 
     userId: ObjectId,
+
+    mealTemplateId: ObjectId,
 
     name: String,
 
@@ -111,6 +151,14 @@ This establishes ownership while allowing the Workout module to remain an indepe
 
 # 4. Embedded Documents
 
+The MealTemplate aggregate owns its MealTemplateItems.
+
+```text
+MealTemplate
+│
+└── MealTemplateItem[]
+```
+
 The Meal aggregate owns its MealItems.
 
 ```text
@@ -119,16 +167,26 @@ Meal
 └── MealItem[]
 ```
 
-MealItems never exist independently and are always created, updated, and retrieved with their parent Meal.
+Both embedded document types exist only within their parent aggregate and are always created, updated, and retrieved together.
 
 ---
 
 # 5. References
 
-Meals reference the Food catalog.
+MealTemplates and Meals reference the Food catalog.
+
+```text
+MealTemplate
+│
+└── MealTemplateItem
+        │
+        └── foodId ─────► Food
+```
 
 ```text
 Meal
+│
+├── mealTemplateId ─────► MealTemplate (Optional)
 │
 └── MealItem
         │
@@ -170,6 +228,16 @@ These values are calculated from historical Meal documents or materialized by th
 
 # 8. Design Decisions
 
+## Reusable Meal Templates
+
+MealTemplates represent reusable meals that users can log repeatedly.
+
+They store only food references and quantities.
+
+Nutritional values are intentionally not stored because they are recalculated whenever a Meal is created.
+
+---
+
 ## Immutable Meal History
 
 Meals represent historical events.
@@ -182,7 +250,7 @@ Once recorded, nutritional values within MealItems remain unchanged even if the 
 
 Each MealItem stores the nutritional values calculated at the time the meal was recorded.
 
-This preserves historical accuracy and prevents changes in external food databases from affecting previously logged meals.
+This preserves historical accuracy and prevents changes in the Food catalog from affecting historical meals.
 
 ---
 
@@ -190,7 +258,17 @@ This preserves historical accuracy and prevents changes in external food databas
 
 The Food collection stores reusable food definitions imported from external food providers.
 
-Users reference foods when logging meals but do not modify the system catalog during Phase 1.
+Users reference foods when creating MealTemplates and logging Meals but do not modify the system catalog during Phase 1.
+
+---
+
+## Embedded MealTemplateItems
+
+MealTemplateItems are embedded because they:
+
+- Never exist independently
+- Are always retrieved with their MealTemplate
+- Are always persisted together with their MealTemplate
 
 ---
 
@@ -199,14 +277,14 @@ Users reference foods when logging meals but do not modify the system catalog du
 MealItems are embedded because they:
 
 - Never exist independently
-- Are always retrieved with a Meal
-- Are always persisted together with a Meal
+- Are always retrieved with their Meal
+- Are always persisted together with their Meal
 
 ---
 
 ## Food References
 
-MealItems reference Foods by ObjectId to maintain traceability to the original food catalog entry.
+MealTemplateItems and MealItems reference Foods by ObjectId to maintain traceability to the original food catalog entry.
 
 ---
 
@@ -214,7 +292,7 @@ MealItems reference Foods by ObjectId to maintain traceability to the original f
 
 Foods are never physically deleted.
 
-The `isActive` field allows foods to be hidden from future searches while preserving historical meal references.
+The `isActive` field allows foods to be hidden from future searches while preserving historical references.
 
 ---
 
@@ -250,6 +328,45 @@ The `isActive` field allows foods to be hidden from future searches while preser
 
 ---
 
+## MealTemplate
+
+```javascript
+{
+    _id: ObjectId("..."),
+
+    userId: ObjectId("..."),
+
+    name: "Chicken & Rice",
+
+    mealItems: [
+        {
+            _id: ObjectId(),
+
+            foodId: ObjectId(),
+
+            quantity: 200,
+
+            servingUnit: "GRAM"
+        },
+        {
+            _id: ObjectId(),
+
+            foodId: ObjectId(),
+
+            quantity: 150,
+
+            servingUnit: "GRAM"
+        }
+    ],
+
+    createdAt: ISODate(...),
+
+    updatedAt: ISODate(...)
+}
+```
+
+---
+
 ## Meal
 
 ```javascript
@@ -257,6 +374,8 @@ The `isActive` field allows foods to be hidden from future searches while preser
     _id: ObjectId("..."),
 
     userId: ObjectId("..."),
+
+    mealTemplateId: ObjectId("..."),
 
     name: "Lunch",
 
@@ -326,6 +445,5 @@ Potential future enhancements include:
 - Barcode scanning
 - Micronutrient tracking
 - Fiber, sugar, and sodium tracking
-- Meal templates
 - Favorite meals
 - AI meal parsing
