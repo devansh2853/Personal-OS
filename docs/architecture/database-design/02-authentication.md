@@ -41,7 +41,9 @@ No embedded documents are used within this module.
 
     status: AccountStatus,
 
-    lastLoginAt: Date,
+    resetPasswordTokenHash: String,
+
+    resetPasswordExpiresAt: Date,
 
     createdAt: Date,
 
@@ -172,6 +174,21 @@ This limits the impact of a compromised refresh token and follows modern authent
 
 ---
 
+## Password Reset
+
+Password reset state is stored directly within the AuthAccount rather than as a separate collection.
+
+This design was chosen because:
+
+- Each account may have at most one active password reset request.
+- Requesting a new password reset invalidates any previous request.
+- Password reset data is temporary authentication state that naturally belongs to the AuthAccount.
+- This avoids introducing an additional collection for a simple one-to-one relationship.
+
+Password reset tokens are stored as secure hashes and are never persisted in plain text.
+
+---
+
 ## Multiple Device Sessions
 
 A single AuthAccount may own multiple active RefreshTokens.
@@ -199,6 +216,10 @@ Each RefreshToken represents an independently authenticated device session.
     status: "ACTIVE",
 
     lastLoginAt: ISODate(...),
+
+    resetPasswordTokenHash: "argon2id$.....",
+
+    resetPasswordExpiresAt: ISODate(...),
 
     createdAt: ISODate(...),
 
