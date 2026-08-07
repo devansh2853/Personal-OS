@@ -45,6 +45,8 @@ This establishes ownership while allowing the Food & Meal Tracking module to rem
 {
     _id: ObjectId,
 
+    externalId: String,
+
     name: String,
 
     referenceQuantity: Number,
@@ -303,6 +305,8 @@ The `isActive` field allows foods to be hidden from future searches while preser
 ```javascript
 {
     _id: ObjectId("..."),
+
+    externalId: "168462",
 
     name: "Cooked White Rice",
 
