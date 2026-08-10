@@ -6,7 +6,7 @@
 
 The User module manages the user's application profile and provides access to the authenticated user's profile data.
 
-The module owns only the `User` entity.
+The User module owns only the `User` entity.
 
 Authentication is handled by the Authentication module, while module-specific user data is owned by its respective business domain.
 
@@ -14,31 +14,90 @@ Authentication is handled by the Authentication module, while module-specific us
 
 # 2. Module Structure
 
-```text
-src/modules/user/
+The User module follows the standard layered backend architecture.
 
-├── user.controller.ts
-├── user.service.ts
-├── user.repository.ts
-├── user.model.ts
-├── user.routes.ts
-├── user.validation.ts
-├── user.dto.ts
-└── user.mapper.ts
+```text
+src/
+│
+├── middleware/
+│   ├── auth.middleware.ts
+│   ├── validation.middleware.ts
+│   └── error.middleware.ts
+│
+└── modules/
+    └── user/
+        ├── user.controller.ts
+        ├── user.service.ts
+        ├── user.repository.ts
+        ├── user.model.ts
+        ├── user.routes.ts
+        ├── user.validation.ts
+        ├── user.dto.ts
+        └── user.mapper.ts
 ```
 
-Account deletion orchestration is handled outside the User module because it coordinates deletion across multiple domains.
+Account deletion is an application-level workflow because it coordinates multiple domains.
 
 ```text
-src/application/
-
-└── account-deletion/
-    └── account-deletion.service.ts
+src/
+│
+└── application/
+    └── account-deletion/
+        └── account-deletion.service.ts
 ```
 
 ---
 
-# 3. Routes
+# 3. Architecture
+
+The User module follows this layered flow:
+
+```text
+HTTP Request
+      │
+      ▼
+Authentication Middleware
+      │
+      ▼
+Validation Middleware
+      │
+      ▼
+Controller
+      │
+      ▼
+Service
+      │
+      ▼
+Repository
+      │
+      ▼
+Mongoose Model
+      │
+      ▼
+MongoDB
+```
+
+For account deletion, the flow additionally includes the application-level deletion orchestrator.
+
+```text
+Controller
+      │
+      ▼
+AccountDeletionService
+      │
+      ├── AuthenticationService
+      ├── WorkoutService
+      ├── FoodMealService
+      ├── NutritionService
+      ├── WaterService
+      ├── WeightService
+      ├── SupplementService
+      └── UserService
+```
+
+---
+
+# 4. Routes
 
 | Method | Endpoint | Authentication | Purpose                                                     |
 | ------ | -------- | -------------- | ----------------------------------------------------------- |
@@ -46,23 +105,23 @@ src/application/
 | PATCH  | `/user`  | Required       | Partially update the authenticated user's profile           |
 | DELETE | `/user`  | Required       | Delete the authenticated user's account and associated data |
 
-The user ID is not included in the URL.
+The user ID is intentionally not included in the URL.
 
-The authenticated user's ID is extracted from the JWT by the authentication middleware.
+The authenticated user's ID is obtained from the JWT.
 
 ---
 
-# 4. Authentication Context
+# 5. Authentication Middleware
 
 All User endpoints require authentication.
 
-The Authentication Middleware:
+The shared `auth.middleware.ts` is responsible for:
 
-1. Extracts the JWT from the `Authorization` header.
-2. Verifies the JWT signature.
-3. Verifies token expiration.
-4. Extracts the user ID from the JWT.
-5. Attaches the authenticated identity to the request.
+1. Extracting the JWT from the `Authorization` header.
+2. Verifying the JWT signature.
+3. Verifying token expiration.
+4. Extracting the authenticated user ID.
+5. Attaching the authenticated identity to the request.
 
 Example:
 
@@ -72,35 +131,94 @@ req.user = {
 };
 ```
 
-Controllers use `req.user.id` to identify the current user.
+If the JWT is missing or invalid:
 
-The client does not provide the `userId` for User endpoints.
+```text
+401 Unauthorized
+```
 
----
+The request does not reach the User Controller.
 
-# 5. Controller
-
-The User Controller is responsible for HTTP-level concerns only.
-
-It shall:
-
-- Extract the authenticated user ID.
-- Extract request data.
-- Invoke the appropriate service.
-- Return the HTTP response.
-
-It shall not:
-
-- Perform database queries directly.
-- Contain business logic.
-- Coordinate deletion across domains.
-- Perform manual database deletion.
+The User Controller does not perform JWT verification itself.
 
 ---
 
-# 6. GET /user
+# 6. Validation Middleware
+
+Request validation is handled by the shared `validation.middleware.ts`.
+
+The middleware receives a module-specific validation schema.
+
+Example:
+
+```typescript
+validate(UpdateUserSchema);
+```
+
+The validation middleware is responsible for structural request validation.
+
+It validates:
+
+- Data types
+- Enum values
+- Numeric constraints
+- Date formats
+- String constraints
+- Allowed request fields
+- Required fields where applicable
+
+Invalid requests return:
+
+```text
+400 Bad Request
+```
+
+## Validation vs Business Logic
+
+Validation checks whether the request is structurally valid.
+
+For example:
+
+```text
+height = -50
+```
+
+is rejected by validation.
+
+Similarly:
+
+```text
+heightUnit = "BANANA"
+```
+
+is rejected because it is not a valid enum value.
+
+Business rules are handled by the User Service.
+
+For example:
+
+```text
+"Is the user allowed to perform this update?"
+```
+
+belongs to the service layer.
+
+Mongoose schema validation provides an additional database-level integrity layer but is not the primary API validation mechanism.
+
+---
+
+# 7. GET /user
 
 Retrieves the authenticated user's profile.
+
+## Request
+
+```http
+GET /user
+Authorization: Bearer <JWT>
+```
+
+No user ID is required in the request.
 
 ## Flow
 
@@ -126,13 +244,15 @@ UserMapper.toResponse()
 200 OK
 ```
 
-## Controller Responsibility
+## Controller Responsibilities
 
 The controller:
 
 1. Extracts `req.user.id`.
 2. Calls `UserService.getUserById(userId)`.
-3. Returns the mapped `UserResponse`.
+3. Returns the `UserResponse`.
+
+The controller does not directly query MongoDB.
 
 ## Possible Errors
 
@@ -142,15 +262,22 @@ The controller:
 | `404`  | Authenticated User does not exist |
 | `500`  | Unexpected server error           |
 
-A valid JWT does not guarantee that the corresponding User document still exists. For example, the User may have been deleted while an existing JWT has not yet expired.
+A valid JWT does not guarantee that the User document exists.
+
+For example, a User may have been deleted while an existing JWT has not yet expired.
 
 ---
 
-# 7. PATCH /user
+# 8. PATCH /user
 
 Partially updates the authenticated user's profile.
 
-## Request Body
+## Request
+
+```http
+PATCH /user
+Authorization: Bearer <JWT>
+```
 
 The request body contains only the fields that need to be updated.
 
@@ -181,7 +308,7 @@ PATCH /user
 Authentication Middleware
     │
     ▼
-Request Validation
+Validation Middleware
     │
     ▼
 UserController.updateUser()
@@ -205,8 +332,6 @@ A single `UpdateUserRequest` DTO is used.
 
 All fields are optional because PATCH supports partial updates.
 
-Example:
-
 ```typescript
 interface UpdateUserRequest {
   firstName?: string;
@@ -223,24 +348,11 @@ interface UpdateUserRequest {
 }
 ```
 
-## Validation
+The frontend can send any subset of these fields.
 
-The update request shall be validated before reaching the service.
+## Response
 
-Validation includes:
-
-- Data types
-- Valid enum values
-- Numeric constraints
-- Date format
-- String constraints
-- Allowed fields
-
-Invalid requests return:
-
-```text
-400 Bad Request
-```
+The updated User is returned as a `UserResponse`.
 
 ## Possible Errors
 
@@ -253,9 +365,18 @@ Invalid requests return:
 
 ---
 
-# 8. DELETE /user
+# 9. DELETE /user
 
 Deletes the authenticated user's account and all user-owned data across the application.
+
+## Request
+
+```http
+DELETE /user
+Authorization: Bearer <JWT>
+```
+
+No user ID is included in the URL or request body.
 
 ## Flow
 
@@ -293,13 +414,11 @@ After successful deletion:
 
 ---
 
-# 9. Account Deletion Orchestration
+# 10. Account Deletion Orchestration
 
 Account deletion is an application-level workflow because it spans multiple bounded contexts.
 
-The `AccountDeletionService` coordinates deletion but does not directly access domain repositories.
-
-It calls each domain's deletion operation.
+The `AccountDeletionService` coordinates deletion but does not directly access the repositories of other domains.
 
 Conceptually:
 
@@ -326,9 +445,11 @@ async deleteAccount(userId: string) {
 
 Each domain remains responsible for deleting its own data.
 
+The orchestrator knows **which domains must participate**, but does not know how their data is stored.
+
 ---
 
-# 10. Domain Deletion Responsibilities
+# 11. Domain Deletion Responsibilities
 
 | Domain         | Data Deleted                                     |
 | -------------- | ------------------------------------------------ |
@@ -341,15 +462,15 @@ Each domain remains responsible for deleting its own data.
 | Supplement     | Supplements, SupplementSchedules, SupplementLogs |
 | User           | User                                             |
 
-The Food catalog is **not deleted** because it is application-level catalog data and is not owned by an individual user.
+The Food catalog is not deleted because it is application-level catalog data and is not owned by an individual user.
 
 ---
 
-# 11. User Service
+# 12. User Service
 
-The User Service contains User-domain business operations.
+The User Service contains business operations belonging to the User domain.
 
-### Methods
+## Methods
 
 ```text
 getUserById(userId)
@@ -359,13 +480,15 @@ updateUserById(userId, updateRequest)
 deleteUser(userId)
 ```
 
+---
+
 ## `getUserById()`
 
 Responsibilities:
 
-1. Request User from repository.
-2. Throw `NotFoundError` if User does not exist.
-3. Return the User entity/document to the controller layer.
+1. Request the User from the repository.
+2. Throw `NotFoundError` if the User does not exist.
+3. Return the User to the controller/application layer.
 
 ---
 
@@ -373,9 +496,10 @@ Responsibilities:
 
 Responsibilities:
 
-1. Validate business-level update rules.
-2. Update the User through the repository.
-3. Return the updated User.
+1. Receive the authenticated user's ID and validated update request.
+2. Apply User-domain business rules.
+3. Update the User through the repository.
+4. Return the updated User.
 
 The service does not perform HTTP-specific operations.
 
@@ -385,7 +509,7 @@ The service does not perform HTTP-specific operations.
 
 Deletes only the User entity owned by the User domain.
 
-It does **not** delete:
+It does not delete:
 
 - AuthAccount
 - Workout data
@@ -399,11 +523,11 @@ Those are handled by the respective domains through `AccountDeletionService`.
 
 ---
 
-# 12. User Repository
+# 13. User Repository
 
 The User Repository is responsible only for persistence operations against the User collection.
 
-### Methods
+## Methods
 
 ```text
 findById(userId)
@@ -415,19 +539,39 @@ deleteById(userId)
 create(userData)
 ```
 
-`create()` exists because other application workflows, particularly user registration, need to create a User document.
+### `findById()`
 
-The User API does not expose a public `POST /user` endpoint.
+Retrieves a User by its ID.
+
+### `updateById()`
+
+Updates the specified User document.
+
+### `deleteById()`
+
+Deletes the User document.
+
+### `create()`
+
+Creates a User document.
+
+The `create()` repository method exists because user registration requires creation of a User.
+
+However, the User API does not expose:
+
+```http
+POST /user
+```
 
 User creation is initiated through:
 
-```text
+```http
 POST /auth/register
 ```
 
 ---
 
-# 13. User Model
+# 14. User Model
 
 The Mongoose model represents the MongoDB persistence schema defined in the User Database Design.
 
@@ -435,37 +579,40 @@ Conceptually:
 
 ```text
 UserModel
-    │
-    ├── firstName
-    ├── lastName
-    ├── dateOfBirth
-    ├── gender
-    ├── height
-    ├── heightUnit
-    ├── preferredWeightUnit
-    ├── preferredWaterUnit
-    ├── timeZone
-    ├── activityLevel
-    ├── fitnessGoal
-    ├── createdAt
-    └── updatedAt
+│
+├── firstName
+├── lastName
+├── dateOfBirth
+├── gender
+├── height
+├── heightUnit
+├── preferredWeightUnit
+├── preferredWaterUnit
+├── timeZone
+├── activityLevel
+├── fitnessGoal
+├── createdAt
+└── updatedAt
 ```
 
 The model contains database-specific configuration such as:
 
-- Required fields
 - Data types
+- Required fields
 - Enum constraints
-- Indexes
+- Schema validation
 - Timestamps
+- Indexes where required
 
 ---
 
-# 14. DTOs
+# 15. DTOs
 
-The User module uses DTOs to define API contracts independently of the MongoDB model.
+DTOs define the API contract independently of the MongoDB document structure.
 
-### UserResponse
+## UserResponse
+
+The User response contains:
 
 ```text
 id
@@ -482,19 +629,37 @@ activityLevel
 fitnessGoal
 ```
 
-### UpdateUserRequest
+The MongoDB `_id` field is exposed as `id` in the API response.
 
-Contains optional fields that may be updated through PATCH.
-
-Database-specific fields such as MongoDB `_id`, internal timestamps, and other persistence details are not exposed through the API DTO.
+Internal database fields are not exposed.
 
 ---
 
-# 15. Mapper
+## UpdateUserRequest
 
-The User Mapper converts database/domain representations into API responses.
+Contains the optional fields that may be modified through PATCH.
 
-Conceptually:
+```typescript
+interface UpdateUserRequest {
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: Date;
+  gender?: Gender;
+  height?: number;
+  heightUnit?: HeightUnit;
+  preferredWeightUnit?: WeightUnit;
+  preferredWaterUnit?: WaterUnit;
+  timeZone?: string;
+  activityLevel?: ActivityLevel;
+  fitnessGoal?: FitnessGoal;
+}
+```
+
+---
+
+# 16. Mapper
+
+The User Mapper converts the persistence representation into the API representation.
 
 ```text
 UserDocument
@@ -506,51 +671,49 @@ UserMapper.toResponse()
 UserResponse
 ```
 
-The mapper prevents database-specific fields from being accidentally exposed through the API.
+The mapper is responsible for:
+
+- Converting MongoDB `_id` to API `id`.
+- Selecting fields exposed through the API.
+- Preventing database-specific fields from being accidentally exposed.
 
 ---
 
-# 16. Validation
+# 17. Validation Schemas
 
-Validation is performed before business logic.
-
-For example:
+User-specific validation schemas are defined in:
 
 ```text
-PATCH /user
-
-{
-    "height": -50
-}
+user.validation.ts
 ```
 
-fails validation because height cannot be negative.
-
-Similarly:
+Examples include:
 
 ```text
-{
-    "heightUnit": "BANANA"
-}
+UpdateUserSchema
 ```
 
-fails because `BANANA` is not a valid `HeightUnit`.
+The schemas are passed to the shared validation middleware.
 
-Validation errors return:
+Example:
 
-```http
-400 Bad Request
+```typescript
+validate(UpdateUserSchema);
 ```
 
-Validation is separate from business logic.
+The validation middleware itself is shared across the entire application.
+
+The User module owns the User-specific validation rules.
 
 ---
 
-# 17. Error Handling
+# 18. Error Handling
 
-The User module uses centralized application error handling.
+The User module uses the application's centralized error-handling middleware.
 
-Services should throw application-specific errors such as:
+Services may throw application-specific errors.
+
+Example:
 
 ```typescript
 throw new NotFoundError("User not found");
@@ -562,53 +725,103 @@ Controllers should not manually format every error.
 
 ---
 
-# 18. Layer Responsibilities
+# 19. Complete Request Flow
+
+## GET
 
 ```text
-HTTP Request
-      │
-      ▼
-Authentication Middleware
-      │
-      ▼
-Controller
-      │
-      ▼
-Service
-      │
-      ▼
-Repository
-      │
-      ▼
-Mongoose Model
-      │
-      ▼
+GET /user
+     │
+     ▼
+Auth Middleware
+     │
+     ▼
+User Controller
+     │
+     ▼
+User Service
+     │
+     ▼
+User Repository
+     │
+     ▼
 MongoDB
+     │
+     ▼
+Mapper
+     │
+     ▼
+200 OK
 ```
 
-For account deletion:
+## PATCH
 
 ```text
-Controller
-      │
-      ▼
-AccountDeletionService
-      │
-      ├── AuthenticationService
-      ├── WorkoutService
-      ├── FoodMealService
-      ├── NutritionService
-      ├── WaterService
-      ├── WeightService
-      ├── SupplementService
-      └── UserService
+PATCH /user
+     │
+     ▼
+Auth Middleware
+     │
+     ▼
+Validation Middleware
+     │
+     ▼
+User Controller
+     │
+     ▼
+User Service
+     │
+     ▼
+User Repository
+     │
+     ▼
+MongoDB
+     │
+     ▼
+Mapper
+     │
+     ▼
+200 OK
 ```
 
-The orchestration layer coordinates the workflow while each domain remains responsible for its own persistence and business logic.
+## DELETE
+
+```text
+DELETE /user
+     │
+     ▼
+Auth Middleware
+     │
+     ▼
+User Controller
+     │
+     ▼
+AccountDeletionService
+     │
+     ├── Authentication
+     ├── Workout
+     ├── Food & Meal
+     ├── Nutrition
+     ├── Water
+     ├── Weight
+     ├── Supplement
+     │
+     ▼
+UserService
+     │
+     ▼
+UserRepository
+     │
+     ▼
+MongoDB
+     │
+     ▼
+204 No Content
+```
 
 ---
 
-# 19. Important Design Decisions
+# 20. Important Design Decisions
 
 ## Authenticated User Context
 
@@ -635,6 +848,14 @@ POST /auth/register
 
 ---
 
+## PATCH Instead of PUT
+
+The User API uses PATCH because profile updates are generally partial.
+
+The client only sends fields that need to change.
+
+---
+
 ## Account Deletion
 
 Account deletion is coordinated outside the User Service because the User domain does not own other domains' data.
@@ -645,17 +866,34 @@ Each domain deletes its own user-owned data.
 
 ## User Deletion Order
 
-User data is deleted from dependent domains before the User document itself is deleted.
+User-owned data in dependent domains is deleted before the User document itself.
 
-This ensures the authenticated User identity remains available during the deletion workflow.
+This allows the authenticated User identity to remain available during the deletion workflow.
 
 ---
 
-# 20. Future Evolution
+## Layer Separation
 
-The Phase 1 implementation uses synchronous application-level orchestration.
+Each layer has a single primary responsibility:
 
-In a larger future architecture, account deletion may evolve into an asynchronous workflow:
+| Layer                     | Responsibility                           |
+| ------------------------- | ---------------------------------------- |
+| Authentication Middleware | Authenticate request                     |
+| Validation Middleware     | Validate request structure               |
+| Controller                | Handle HTTP concerns                     |
+| Service                   | Apply business logic                     |
+| Repository                | Perform database operations              |
+| Model                     | Define persistence schema                |
+| Mapper                    | Convert persistence data to API DTO      |
+| AccountDeletionService    | Coordinate cross-domain account deletion |
+
+---
+
+# 21. Future Evolution
+
+The Phase 1 implementation uses synchronous application-level account deletion orchestration.
+
+A future implementation may evolve toward an asynchronous deletion workflow:
 
 ```text
 DELETE /user
@@ -671,5 +909,7 @@ AccountDeletionRequested
       ├── Weight
       └── Supplement
 ```
+
+Each domain could independently process the deletion event and report completion.
 
 This is intentionally not required for Phase 1.
