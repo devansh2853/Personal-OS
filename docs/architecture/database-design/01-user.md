@@ -52,6 +52,8 @@ No embedded documents are used within this module.
 
     fitnessGoal: FitnessGoal,
 
+    profileSetupCompleted: Boolean,
+
     isActive: Boolean,
 
     createdAt: Date,
@@ -263,6 +265,8 @@ The `isActive` field allows accounts to be deactivated while preserving historic
     activityLevel: "MODERATELY_ACTIVE",
 
     fitnessGoal: "BUILD_MUSCLE",
+
+    profileSetupCompleted: true,
 
     isActive: true,
 
