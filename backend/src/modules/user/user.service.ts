@@ -15,4 +15,11 @@ export class UserService {
     const userResponse = toUserResponseDTO(user);
     return userResponse;
   }
+
+  async deleteUserById(userId: string): Promise<void> {
+    const deletedUser = await this.userRepository.deleteById(userId);
+    if (!deletedUser) {
+      throw new UserNotFoundError();
+    }
+  }
 }
