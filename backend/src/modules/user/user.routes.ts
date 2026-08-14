@@ -10,5 +10,6 @@ const userService = new UserService(userRepository);
 const userController = new UserController(userService);
 
 userRoutes.get("/:userId", userController.getUser.bind(userController));
+userRoutes.delete("/:userId", userController.deleteUser.bind(userController));
 
 export default userRoutes;
