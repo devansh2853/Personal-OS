@@ -10,8 +10,8 @@ export type UserResponseDTO = {
   id: string;
   firstName: string;
   lastName: string;
-  dateOfBirth?: Date;
-  gender?: Gender;
+  dateOfBirth: Date;
+  gender: Gender;
   heightCm?: number;
   preferredHeightUnit?: HeightUnit;
   preferredWeightUnit?: WeightUnit;
@@ -20,4 +20,11 @@ export type UserResponseDTO = {
   activityLevel?: ActivityLevel;
   fitnessGoal?: FitnessGoal;
   profileSetupCompleted: boolean;
+};
+
+export type UserCreationDTO = {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: Date;
+  gender: Gender;
 };

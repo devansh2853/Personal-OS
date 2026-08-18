@@ -1,4 +1,5 @@
-import { UserResponseDTO } from "./user.dto.js";
+import { RegisterRequestDTO } from "../auth/auth.dtos.js";
+import { UserCreationDTO, UserResponseDTO } from "./user.dto.js";
 import { UserDocument } from "./user.model.js";
 
 export const toUserResponseDTO = (user: UserDocument): UserResponseDTO => {
@@ -16,5 +17,16 @@ export const toUserResponseDTO = (user: UserDocument): UserResponseDTO => {
     activityLevel: user.activityLevel ?? undefined,
     fitnessGoal: user.fitnessGoal ?? undefined,
     profileSetupCompleted: user.profileSetupCompleted,
+  };
+};
+
+export const toUserCreationDTO = (
+  registrationDetails: RegisterRequestDTO,
+): UserCreationDTO => {
+  return {
+    firstName: registrationDetails.firstName,
+    lastName: registrationDetails.lastName,
+    dateOfBirth: registrationDetails.dateOfBirth,
+    gender: registrationDetails.gender,
   };
 };
