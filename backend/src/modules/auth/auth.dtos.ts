@@ -13,4 +13,5 @@ export type AuthAccountCreationDTO = {
   email: string;
   passwordHash: string;
   userId: string;
+  isVerified: boolean;
 };

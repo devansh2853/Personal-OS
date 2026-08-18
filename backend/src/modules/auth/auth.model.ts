@@ -1,4 +1,4 @@
-import { HydratedDocument, InferSchemaType, Model, Schema } from "mongoose";
+import { HydratedDocument, InferSchemaType, model, Schema } from "mongoose";
 
 const authSchema = new Schema(
   {
@@ -21,6 +21,7 @@ const authSchema = new Schema(
     },
     isVerified: {
       type: Boolean,
+      default: false,
       required: true,
     },
 
@@ -36,5 +37,5 @@ const authSchema = new Schema(
   },
 );
 
-export const authModel = new Model("authAccount", authSchema);
+export const authModel = model("authAccount", authSchema);
 export type AuthDocument = HydratedDocument<InferSchemaType<typeof authModel>>;
