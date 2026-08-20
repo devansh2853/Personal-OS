@@ -15,3 +15,15 @@ export type AuthAccountCreationDTO = {
   userId: string;
   isVerified: boolean;
 };
+
+export type LoginRequestDTO = {
+  email: string;
+  password: string;
+};
+
+export type RefreshTokenCreationDTO = {
+  authAccountId: string;
+  tokenHash: string;
+  expiresAt: Date;
+  deviceName?: string;
+};
