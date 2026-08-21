@@ -1,4 +1,6 @@
+import { Types } from "mongoose";
 import { Gender } from "../user/user.enums.js";
+import { UserResponseDTO } from "../user/user.dto.js";
 
 export type RegisterRequestDTO = {
   email: string;
@@ -14,4 +16,22 @@ export type AuthAccountCreationDTO = {
   passwordHash: string;
   userId: string;
   isVerified: boolean;
+};
+
+export type LoginRequestDTO = {
+  email: string;
+  password: string;
+};
+
+export type RefreshTokenCreationDTO = {
+  authAccountId: Types.ObjectId;
+  tokenHash: string;
+  expiresAt: Date;
+  deviceName?: string;
+};
+
+export type LoginResponseDTO = {
+  user: UserResponseDTO;
+  accessToken: string;
+  refreshToken: string;
 };

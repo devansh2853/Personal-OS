@@ -4,7 +4,7 @@ const authSchema = new Schema(
   {
     userId: {
       type: Schema.Types.ObjectId,
-      red: "user",
+      ref: "user",
       required: true,
     },
     email: {
@@ -37,5 +37,40 @@ const authSchema = new Schema(
   },
 );
 
+const refreshTokenSchema = new Schema(
+  {
+    authAccountId: {
+      type: Schema.Types.ObjectId,
+      ref: "authAccount",
+      required: true,
+    },
+    tokenHash: {
+      type: String,
+      required: true,
+    },
+    expiresAt: {
+      type: Date,
+      required: true,
+    },
+    lastUsedAt: {
+      type: Date,
+    },
+    revokedAt: {
+      type: Date,
+    },
+    deviceName: {
+      type: String,
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
+
 export const authModel = model("authAccount", authSchema);
-export type AuthDocument = HydratedDocument<InferSchemaType<typeof authModel>>;
+export type AuthDocument = HydratedDocument<InferSchemaType<typeof authSchema>>;
+
+export const refreshTokenModel = model("refreshToken", refreshTokenSchema);
+export type refreshTokenDocument = HydratedDocument<
+  InferSchemaType<typeof refreshTokenSchema>
+>;
