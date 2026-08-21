@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { UserResponseDTO } from "./user.dto.js";
 import { UserNotFoundError } from "./user.errors.js";
 import { toUserResponseDTO } from "./user.mapper.js";
@@ -6,7 +7,7 @@ import { UserRepository } from "./user.repository.js";
 
 export class UserService {
   constructor(private readonly userRepository: UserRepository) {}
-  async getUserById(userId: string): Promise<UserResponseDTO> {
+  async getUserById(userId: Types.ObjectId): Promise<UserResponseDTO> {
     const user: UserDocument | null =
       await this.userRepository.findById(userId);
     if (!user) {
@@ -16,7 +17,7 @@ export class UserService {
     return userResponse;
   }
 
-  async deleteUserById(userId: string): Promise<void> {
+  async deleteUserById(userId: Types.ObjectId): Promise<void> {
     const deletedUser = await this.userRepository.deleteById(userId);
     if (!deletedUser) {
       throw new UserNotFoundError();

@@ -1,17 +1,28 @@
 import { UserNotFoundError } from "../user/user.errors.js";
-import { toUserCreationDTO } from "../user/user.mapper.js";
+import { toUserCreationDTO, toUserResponseDTO } from "../user/user.mapper.js";
 import { UserDocument } from "../user/user.model.js";
 import { UserRepository } from "../user/user.repository.js";
-import { LoginRequestDTO, RegisterRequestDTO } from "./auth.dtos.js";
-import { EmailAlreadyExistsError } from "./auth.errors.js";
+import {
+  LoginRequestDTO,
+  LoginResponseDTO,
+  RegisterRequestDTO,
+} from "./auth.dtos.js";
+import {
+  EmailAlreadyExistsError,
+  EmailNotVerifiedError,
+  InvalidCredentialsError,
+} from "./auth.errors.js";
 import {
   toAuthAccountCreationDTO,
   toRefreshTokenCreationDTO,
 } from "./auth.mapper.js";
-import { AuthDocument, refreshTokenDocument } from "./auth.model.js";
+import { AuthDocument } from "./auth.model.js";
 import { AuthRepository, RefreshTokenRepository } from "./auth.repository.js";
-import { hashSecret, matchSecret } from "./utils/hash.js";
-import { generateRefreshToken } from "./utils/token.js";
+import { hashSecret, matchSecret } from "../../utils/hash.js";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+} from "../../utils/token.js";
 
 export class AuthService {
   constructor(
@@ -43,7 +54,7 @@ export class AuthService {
       );
     } catch (err) {
       console.log(err);
-      await this.userRepository.deleteById(user._id.toString());
+      await this.userRepository.deleteById(user._id);
       throw Error(
         "Error in creating auth account. Deleting the created user account",
       );
@@ -52,11 +63,11 @@ export class AuthService {
     return;
   }
 
-  async login(loginDetails: LoginRequestDTO) {
+  async login(loginDetails: LoginRequestDTO): Promise<LoginResponseDTO> {
     const authAccount: AuthDocument | null =
       await this.authRepository.findByEmail(loginDetails.email);
     if (!authAccount) {
-      throw new UserNotFoundError();
+      throw new InvalidCredentialsError();
     }
 
     const passwordMatch: boolean = await matchSecret(
@@ -65,19 +76,36 @@ export class AuthService {
     );
 
     if (!passwordMatch) {
-      throw new Error();
+      throw new InvalidCredentialsError();
     }
-    if (!authAccount.isVerified) {
-      throw new Error();
+    // if (!authAccount.isVerified) {
+    //   throw new EmailNotVerifiedError();
+    // }
+
+    const user: UserDocument | null = await this.userRepository.findById(
+      authAccount.userId,
+    );
+    if (!user) {
+      throw new UserNotFoundError();
     }
+
+    const createdAccessToken: string = generateAccessToken(
+      authAccount.userId.toString(),
+    );
 
     const refreshTokenString: string = generateRefreshToken();
     const hashedToken: string = await hashSecret(refreshTokenString);
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    const authAccountId = authAccount._id.toString();
-    const createdRefreshTokenDocument: refreshTokenDocument =
-      await this.refreshTokenRepository.create(
-        toRefreshTokenCreationDTO(authAccountId, hashedToken, expiresAt),
-      );
+    const authAccountId = authAccount._id;
+
+    await this.refreshTokenRepository.create(
+      toRefreshTokenCreationDTO(authAccountId, hashedToken, expiresAt),
+    );
+
+    return {
+      user: toUserResponseDTO(user),
+      accessToken: createdAccessToken,
+      refreshToken: refreshTokenString,
+    };
   }
 }

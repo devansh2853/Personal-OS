@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import {
   AuthAccountCreationDTO,
   RefreshTokenCreationDTO,
@@ -18,7 +19,7 @@ export const toAuthAccountCreationDTO = (
 };
 
 export const toRefreshTokenCreationDTO = (
-  authAccountId: string,
+  authAccountId: Types.ObjectId,
   hashedToken: string,
   expiresAt: Date,
   deviceName?: string,

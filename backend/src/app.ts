@@ -4,12 +4,14 @@ import helmet from "helmet";
 import userRoutes from "./modules/user/user.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import authRoutes from "./modules/auth/auth.routes.js";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 app.use(errorMiddleware);
 
