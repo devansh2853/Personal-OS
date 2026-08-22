@@ -7,7 +7,7 @@ import {
 
 export const toAuthAccountCreationDTO = (
   registrationDetails: RegisterRequestDTO,
-  userId: string,
+  userId: Types.ObjectId,
   passwordHash: string,
 ): AuthAccountCreationDTO => {
   return {

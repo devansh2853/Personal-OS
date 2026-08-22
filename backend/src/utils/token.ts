@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import jwt, { SignOptions } from "jsonwebtoken";
+import { Types } from "mongoose";
 
 export const generateRefreshToken = (): string => {
   const token = randomBytes(32).toString("base64url");
@@ -7,9 +8,13 @@ export const generateRefreshToken = (): string => {
   return token;
 };
 
-export const generateAccessToken = (userId: string): string => {
+export const generateAccessToken = (
+  userId: Types.ObjectId,
+  refreshTokenId: Types.ObjectId,
+): string => {
   const payload = {
     sub: userId,
+    sid: refreshTokenId,
   };
   const secret: string | undefined = process.env.JWT_ACCESS_SECRET;
   if (!secret) {

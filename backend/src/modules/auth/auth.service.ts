@@ -16,13 +16,14 @@ import {
   toAuthAccountCreationDTO,
   toRefreshTokenCreationDTO,
 } from "./auth.mapper.js";
-import { AuthDocument } from "./auth.model.js";
+import { AuthDocument, refreshTokenDocument } from "./auth.model.js";
 import { AuthRepository, RefreshTokenRepository } from "./auth.repository.js";
 import { hashSecret, matchSecret } from "../../utils/hash.js";
 import {
   generateAccessToken,
   generateRefreshToken,
 } from "../../utils/token.js";
+import { Types } from "mongoose";
 
 export class AuthService {
   constructor(
@@ -45,7 +46,7 @@ export class AuthService {
 
     //Password hash
     const passwordHash: string = await hashSecret(registrationDetails.password);
-    const userId: string = user._id.toString();
+    const userId: Types.ObjectId = user._id;
 
     //auth account create
     try {
@@ -88,18 +89,19 @@ export class AuthService {
     if (!user) {
       throw new UserNotFoundError();
     }
-
-    const createdAccessToken: string = generateAccessToken(
-      authAccount.userId.toString(),
-    );
-
     const refreshTokenString: string = generateRefreshToken();
     const hashedToken: string = await hashSecret(refreshTokenString);
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    const authAccountId = authAccount._id;
 
-    await this.refreshTokenRepository.create(
-      toRefreshTokenCreationDTO(authAccountId, hashedToken, expiresAt),
+    const authAccountId = authAccount._id;
+    const createdRefreshToken: refreshTokenDocument =
+      await this.refreshTokenRepository.create(
+        toRefreshTokenCreationDTO(authAccountId, hashedToken, expiresAt),
+      );
+
+    const createdAccessToken: string = generateAccessToken(
+      authAccount.userId,
+      createdRefreshToken._id,
     );
 
     return {
@@ -107,5 +109,25 @@ export class AuthService {
       accessToken: createdAccessToken,
       refreshToken: refreshTokenString,
     };
+  }
+
+  async logout(userId: Types.ObjectId, sessionId: Types.ObjectId) {
+    const authAccount: AuthDocument | null =
+      await this.authRepository.findByUserId(userId);
+    if (!authAccount) {
+      throw new InvalidCredentialsError();
+    }
+    const refreshToken: refreshTokenDocument | null =
+      await this.refreshTokenRepository.findByIdAndAuthAccountId(
+        sessionId,
+        authAccount._id,
+      );
+
+    if (!refreshToken) {
+      throw new InvalidCredentialsError();
+    }
+
+    await this.refreshTokenRepository.deleteById(sessionId);
+    return;
   }
 }

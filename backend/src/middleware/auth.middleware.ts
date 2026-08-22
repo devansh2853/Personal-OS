@@ -21,6 +21,7 @@ export const verifyJWT = (req: Request, res: Response, next: NextFunction) => {
       throw new Error("Invalid JWT payload");
     }
     req.userId = decodedToken.sub;
+    req.sessionId = decodedToken.sid;
     next();
   } catch (error) {
     throw new InvalidCredentialsError();

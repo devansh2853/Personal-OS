@@ -14,7 +14,7 @@ export type RegisterRequestDTO = {
 export type AuthAccountCreationDTO = {
   email: string;
   passwordHash: string;
-  userId: string;
+  userId: Types.ObjectId;
   isVerified: boolean;
 };
 
@@ -33,5 +33,9 @@ export type RefreshTokenCreationDTO = {
 export type LoginResponseDTO = {
   user: UserResponseDTO;
   accessToken: string;
+  refreshToken: string;
+};
+
+export type logoutRequestDTO = {
   refreshToken: string;
 };

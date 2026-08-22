@@ -30,4 +30,9 @@ export class AuthController {
         refreshToken: refreshToken,
       });
   }
+
+  async logout(req: Request, res: Response) {
+    await this.authService.logout(req.userId, req.sessionId);
+    res.clearCookie("accessToken").clearCookie("refreshToken").sendStatus(204);
+  }
 }
