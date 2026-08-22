@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { AppError } from "../errors/app.error.js";
+import { z } from "zod";
 
 export const errorMiddleware = (
   error: Error,
@@ -10,6 +11,13 @@ export const errorMiddleware = (
   if (error instanceof AppError) {
     res.status(error.statusCode).json({
       message: error.message,
+    });
+    return;
+  }
+
+  if (error instanceof z.ZodError){
+    res.status(400).json({
+      message: "Validation Failed",
     });
     return;
   }

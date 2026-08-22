@@ -1,4 +1,4 @@
-import { UserCreationDTO } from "./user.dto.js";
+import { UserCreationDTO, UserUpdationRequestDTO } from "./user.dto.js";
 import { UserDocument, userModel } from "./user.model.js";
 
 export class UserRepository {
@@ -16,5 +16,10 @@ export class UserRepository {
   async create(userData: UserCreationDTO): Promise<UserDocument> {
     const user: UserDocument = await userModel.create(userData);
     return user;
+  }
+
+  async updateById(userId: string, updateData: UserUpdationRequestDTO): Promise<UserDocument | null> {
+    const updatedUser: UserDocument | null = await userModel.findByIdAndUpdate(userId, updateData, {new:true});
+    return updatedUser;
   }
 }

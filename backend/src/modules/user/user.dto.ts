@@ -28,3 +28,17 @@ export type UserCreationDTO = {
   dateOfBirth: Date;
   gender: Gender;
 };
+
+export type UserUpdationRequestDTO = {
+    firstName?: string,
+    lastName?: string,
+    dateOfBirth?: Date,
+    gender?: Gender,
+    heightCm?: number,
+    preferredHeightUnit?: HeightUnit,
+    preferredWeightUnit?: WeightUnit,
+    preferredWaterUnit?: WaterUnit,
+    timeZone?: string,
+    activityLevel?: ActivityLevel,
+    fitnessGoal?: FitnessGoal,
+}

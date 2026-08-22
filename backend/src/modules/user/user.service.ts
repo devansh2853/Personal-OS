@@ -1,4 +1,4 @@
-import { UserResponseDTO } from "./user.dto.js";
+import { UserResponseDTO, UserUpdationRequestDTO } from "./user.dto.js";
 import { UserNotFoundError } from "./user.errors.js";
 import { toUserResponseDTO } from "./user.mapper.js";
 import { UserDocument } from "./user.model.js";
@@ -21,5 +21,15 @@ export class UserService {
     if (!deletedUser) {
       throw new UserNotFoundError();
     }
+  }
+
+  async updateUserById(userId: string, updateData: UserUpdationRequestDTO): Promise<UserResponseDTO> {
+    const updatedUser: UserDocument | null = 
+      await this.userRepository.updateById(userId,updateData);
+    if (!updatedUser){
+      throw new UserNotFoundError();
+    }
+    const updatedUserResponse = toUserResponseDTO(updatedUser);
+    return updatedUserResponse;
   }
 }
