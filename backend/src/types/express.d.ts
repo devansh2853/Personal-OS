@@ -3,6 +3,7 @@ declare global {
     interface Request {
       userId?: Types.ObjectId;
       sessionId?: Types.ObjectId;
+      refreshToken?: string;
     }
   }
 }

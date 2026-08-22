@@ -1,6 +1,11 @@
 import { CookieOptions, Request, Response } from "express";
 import { AuthService } from "./auth.service.js";
-import { LoginRequestDTO, RegisterRequestDTO } from "./auth.dtos.js";
+import {
+  LoginRequestDTO,
+  RefreshRequestDTO,
+  RegisterRequestDTO,
+} from "./auth.dtos.js";
+import { InvalidCredentialsError } from "./auth.errors.js";
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -32,7 +37,36 @@ export class AuthController {
   }
 
   async logout(req: Request, res: Response) {
-    await this.authService.logout(req.userId, req.sessionId);
+    const userId = req.userId;
+    const sessionId = req.sessionId;
+    if (!userId || !sessionId) {
+      throw new InvalidCredentialsError();
+    }
+    await this.authService.logout(userId, sessionId);
     res.clearCookie("accessToken").clearCookie("refreshToken").sendStatus(204);
+  }
+
+  async refresh(req: Request<{}, {}, RefreshRequestDTO>, res: Response) {
+    const sessionId = req.sessionId;
+    const refreshToken = req.refreshToken;
+
+    if (!sessionId || !refreshToken) {
+      throw new InvalidCredentialsError();
+    }
+
+    const { updatedAccessToken, updatedRefreshToken } =
+      await this.authService.refreshAccessToken(sessionId, refreshToken);
+
+    const cookieOptions: CookieOptions = {
+      httpOnly: true,
+      secure: true,
+    };
+    res
+      .cookie("accessToken", updatedAccessToken, cookieOptions)
+      .cookie("refreshToken", updatedRefreshToken)
+      .json({
+        accessToken: updatedAccessToken,
+        refreshToken: updatedRefreshToken,
+      });
   }
 }

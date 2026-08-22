@@ -99,15 +99,12 @@ export class AuthService {
         toRefreshTokenCreationDTO(authAccountId, hashedToken, expiresAt),
       );
 
-    const createdAccessToken: string = generateAccessToken(
-      authAccount.userId,
-      createdRefreshToken._id,
-    );
+    const createdAccessToken: string = generateAccessToken(authAccount.userId);
 
     return {
       user: toUserResponseDTO(user),
       accessToken: createdAccessToken,
-      refreshToken: refreshTokenString,
+      refreshToken: `${createdRefreshToken._id.toString()}.${refreshTokenString}`,
     };
   }
 
@@ -129,5 +126,57 @@ export class AuthService {
 
     await this.refreshTokenRepository.deleteById(sessionId);
     return;
+  }
+
+  async refreshAccessToken(
+    sessionId: Types.ObjectId,
+    providedRefreshToken: string,
+  ) {
+    const refreshToken: refreshTokenDocument | null =
+      await this.refreshTokenRepository.findById(sessionId);
+
+    if (!refreshToken) {
+      throw new InvalidCredentialsError();
+    }
+
+    const matchToken: boolean = await matchSecret(
+      refreshToken.tokenHash,
+      providedRefreshToken,
+    );
+    if (!matchToken) {
+      throw new InvalidCredentialsError();
+    }
+
+    const authAccount: AuthDocument | null = await this.authRepository.findById(
+      refreshToken.authAccountId,
+    );
+    if (!authAccount) {
+      throw new InvalidCredentialsError();
+    }
+
+    const updatedRefreshTokenString = generateRefreshToken();
+    const updatedRefreshTokenHash: string = await hashSecret(
+      updatedRefreshTokenString,
+    );
+    const updatedExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    const updatedRefreshToken = await this.refreshTokenRepository.updateToken(
+      sessionId,
+      updatedRefreshTokenHash,
+      updatedExpiresAt,
+    );
+
+    if (!updatedRefreshToken) {
+      throw new Error(
+        "There was an internal error in creating a new refresh token",
+      );
+    }
+
+    const createdAccessToken: string = generateAccessToken(authAccount.userId);
+
+    return {
+      updatedAccessToken: createdAccessToken,
+      updatedRefreshToken: `${updatedRefreshToken._id.toString()}.${updatedRefreshTokenString}`,
+    };
   }
 }

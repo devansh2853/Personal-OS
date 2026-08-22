@@ -8,13 +8,9 @@ export const generateRefreshToken = (): string => {
   return token;
 };
 
-export const generateAccessToken = (
-  userId: Types.ObjectId,
-  refreshTokenId: Types.ObjectId,
-): string => {
+export const generateAccessToken = (userId: Types.ObjectId): string => {
   const payload = {
     sub: userId,
-    sid: refreshTokenId,
   };
   const secret: string | undefined = process.env.JWT_ACCESS_SECRET;
   if (!secret) {

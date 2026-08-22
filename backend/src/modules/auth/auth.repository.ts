@@ -11,6 +11,10 @@ import {
 } from "./auth.model.js";
 
 export class AuthRepository {
+  async findById(id: Types.ObjectId) {
+    return await authModel.findById(id);
+  }
+
   async findByEmail(registeredEmail: string): Promise<AuthDocument | null> {
     const authAccount: AuthDocument | null = await authModel.findOne({
       email: registeredEmail,
@@ -38,6 +42,10 @@ export class RefreshTokenRepository {
     return await refreshTokenModel.create(refreshTokenData);
   }
 
+  async findById(id: Types.ObjectId) {
+    return await refreshTokenModel.findById(id);
+  }
+
   async findByIdAndAuthAccountId(
     id: Types.ObjectId,
     authAccountId: Types.ObjectId,
@@ -50,5 +58,20 @@ export class RefreshTokenRepository {
 
   async deleteById(id: Types.ObjectId) {
     await refreshTokenModel.findByIdAndDelete(id);
+  }
+
+  async updateToken(
+    id: Types.ObjectId,
+    updatedRefreshTokenHash: string,
+    updatedExpiresAt: Date,
+  ): Promise<refreshTokenDocument | null> {
+    return await refreshTokenModel.findByIdAndUpdate(
+      id,
+      {
+        tokenHash: updatedRefreshTokenHash,
+        expiresAt: updatedExpiresAt,
+      },
+      { returnDocument: "after" },
+    );
   }
 }

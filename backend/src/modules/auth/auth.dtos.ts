@@ -36,6 +36,6 @@ export type LoginResponseDTO = {
   refreshToken: string;
 };
 
-export type logoutRequestDTO = {
+export type RefreshRequestDTO = {
   refreshToken: string;
 };
