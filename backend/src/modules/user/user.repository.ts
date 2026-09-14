@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { ClientSession, Types } from "mongoose";
 import { UserCreationDTO } from "./user.dto.js";
 import { UserDocument, userModel } from "./user.model.js";
 
@@ -14,8 +14,13 @@ export class UserRepository {
     return deletedUser;
   }
 
-  async create(userData: UserCreationDTO): Promise<UserDocument> {
-    const user: UserDocument = await userModel.create(userData);
+  async create(
+    userData: UserCreationDTO,
+    session?: ClientSession,
+  ): Promise<UserDocument> {
+    const [user]: UserDocument[] = await userModel.create([userData], {
+      session,
+    });
     return user;
   }
 }

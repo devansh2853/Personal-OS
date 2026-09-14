@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import jwt, { SignOptions } from "jsonwebtoken";
+import { Types } from "mongoose";
 
 export const generateRefreshToken = (): string => {
   const token = randomBytes(32).toString("base64url");
@@ -7,7 +8,12 @@ export const generateRefreshToken = (): string => {
   return token;
 };
 
-export const generateAccessToken = (userId: string): string => {
+export const generateEmailVerificationToken = (): string => {
+  const token = randomBytes(32).toString("hex");
+  return token;
+};
+
+export const generateAccessToken = (userId: Types.ObjectId): string => {
   const payload = {
     sub: userId,
   };

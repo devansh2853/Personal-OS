@@ -1,3 +1,4 @@
+import { ClientSession, Types } from "mongoose";
 import {
   AuthAccountCreationDTO,
   RefreshTokenCreationDTO,
@@ -10,6 +11,10 @@ import {
 } from "./auth.model.js";
 
 export class AuthRepository {
+  async findById(id: Types.ObjectId) {
+    return await authModel.findById(id);
+  }
+
   async findByEmail(registeredEmail: string): Promise<AuthDocument | null> {
     const authAccount: AuthDocument | null = await authModel.findOne({
       email: registeredEmail,
@@ -17,9 +22,55 @@ export class AuthRepository {
     return authAccount;
   }
 
-  async create(authAccountData: AuthAccountCreationDTO): Promise<AuthDocument> {
-    const authAccount: AuthDocument = await authModel.create(authAccountData);
+  async create(
+    authAccountData: AuthAccountCreationDTO,
+    session?: ClientSession,
+  ): Promise<AuthDocument> {
+    const [authAccount]: AuthDocument[] = await authModel.create(
+      [authAccountData],
+      { session },
+    );
     return authAccount;
+  }
+
+  async findByUserId(userId: Types.ObjectId): Promise<AuthDocument | null> {
+    const authAccount: AuthDocument | null = await authModel.findOne({
+      userId: userId,
+    });
+    return authAccount;
+  }
+
+  async verifyEmail(id: Types.ObjectId) {
+    return await authModel.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          isVerified: true,
+          emailVerificationTokenHash: null,
+          emailVerificationTokenExpiresAt: null,
+        },
+      },
+      { new: true },
+    );
+  }
+
+  async updateEmailVerificationTokenById(
+    id: Types.ObjectId,
+    emailVerificationTokenHash: string,
+    emailVerificationTokenExpiresAt: Date,
+  ): Promise<AuthDocument | null> {
+    return await authModel.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          emailVerificationTokenHash,
+          emailVerificationTokenExpiresAt,
+        },
+      },
+      {
+        new: true,
+      },
+    );
   }
 }
 
@@ -28,5 +79,38 @@ export class RefreshTokenRepository {
     refreshTokenData: RefreshTokenCreationDTO,
   ): Promise<refreshTokenDocument> {
     return await refreshTokenModel.create(refreshTokenData);
+  }
+
+  async findById(id: Types.ObjectId) {
+    return await refreshTokenModel.findById(id);
+  }
+
+  async findByIdAndAuthAccountId(
+    id: Types.ObjectId,
+    authAccountId: Types.ObjectId,
+  ): Promise<refreshTokenDocument | null> {
+    return await refreshTokenModel.findOne({
+      _id: id,
+      authAccountId: authAccountId,
+    });
+  }
+
+  async deleteById(id: Types.ObjectId) {
+    await refreshTokenModel.findByIdAndDelete(id);
+  }
+
+  async updateToken(
+    id: Types.ObjectId,
+    updatedRefreshTokenHash: string,
+    updatedExpiresAt: Date,
+  ): Promise<refreshTokenDocument | null> {
+    return await refreshTokenModel.findByIdAndUpdate(
+      id,
+      {
+        tokenHash: updatedRefreshTokenHash,
+        expiresAt: updatedExpiresAt,
+      },
+      { returnDocument: "after" },
+    );
   }
 }
