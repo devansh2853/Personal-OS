@@ -5,6 +5,7 @@ import userRoutes from "./modules/user/user.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import cookieParser from "cookie-parser";
+import exerciseRoutes from "./modules/exercise/exercise.routes.js";
 
 const app = express();
 
@@ -17,5 +18,6 @@ app.use(errorMiddleware);
 
 app.use("/user", userRoutes);
 app.use("/auth", authRoutes);
+app.use("/api/exercise", exerciseRoutes);
 
 export default app;

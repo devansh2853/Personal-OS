@@ -1,3 +1,4 @@
+import "./models/register-models.js";
 import dotenv from "dotenv";
 dotenv.config();
 
