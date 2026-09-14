@@ -13,6 +13,7 @@ const authSchema = new Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      index: true,
     },
     passwordHash: {
       type: String,
