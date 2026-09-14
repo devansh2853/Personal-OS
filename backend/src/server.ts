@@ -1,10 +1,11 @@
-import app from "./app.js";
 import dotenv from "dotenv";
-import connectDatabase from "./config/database.js";
+dotenv.config();
 
 const PORT = process.env.PORT || 3000;
-dotenv.config();
+
 const startServer = async (): Promise<void> => {
+  const { default: app } = await import("./app.js");
+  const { default: connectDatabase } = await import("./config/database.js");
   await connectDatabase();
   console.log("MongoDB database connected successfully");
   app.listen(PORT, () => {

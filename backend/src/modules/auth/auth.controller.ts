@@ -4,11 +4,13 @@ import {
   LoginRequestDTO,
   RefreshRequestDTO,
   RegisterRequestDTO,
+  VerifyEmailRequestDTO,
 } from "./auth.dtos.js";
 import { InvalidCredentialsError } from "./auth.errors.js";
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
   async register(
     req: Request<{}, {}, RegisterRequestDTO>,
     res: Response,
@@ -68,5 +70,16 @@ export class AuthController {
         accessToken: updatedAccessToken,
         refreshToken: updatedRefreshToken,
       });
+  }
+
+  async verifyEmail(
+    req: Request<{}, {}, VerifyEmailRequestDTO>,
+    res: Response,
+  ): Promise<void> {
+    await this.authService.verifyEmail(req.body);
+    res.status(200).json({
+      success: true,
+      message: "Email Verified Successfully",
+    });
   }
 }

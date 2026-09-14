@@ -31,6 +31,14 @@ const authSchema = new Schema(
     resetPasswordExpiresAt: {
       type: Date,
     },
+    emailVerificationTokenHash: {
+      type: String,
+      default: null,
+    },
+    emailVerificationTokenExpiresAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

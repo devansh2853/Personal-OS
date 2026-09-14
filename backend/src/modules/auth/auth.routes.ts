@@ -7,16 +7,32 @@ import {
   extractRefreshToken,
   verifyJWT,
 } from "../../middleware/auth.middleware.js";
+import { EmailService } from "../email/email.service.js";
+import { ResendEmailProvider } from "../email/providers/resend.email.provider.js";
+import { AppError } from "../../errors/app.error.js";
+import { GmailEmailProvider } from "../email/providers/gmail.email.provider.js";
+import { TransactionManager } from "../../config/transaction.manager.js";
 
 const authRoutes = Router();
 
 const authRepository = new AuthRepository();
 const userRepository = new UserRepository();
 const refreshTokenRepository = new RefreshTokenRepository();
+const transactionManager = new TransactionManager();
+
+const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+if (!GMAIL_APP_PASSWORD) {
+  throw new AppError(500, "Gmail App Password Not found");
+}
+const emailService = new EmailService(
+  new GmailEmailProvider("devanshbansal2021@gmail.com", GMAIL_APP_PASSWORD),
+);
 const authService = new AuthService(
   authRepository,
   userRepository,
   refreshTokenRepository,
+  emailService,
+  transactionManager,
 );
 const authController = new AuthController(authService);
 
@@ -37,4 +53,8 @@ authRoutes.post(
   authController.refresh.bind(authController),
 );
 
+authRoutes.post(
+  "/verify-email",
+  authController.verifyEmail.bind(authController),
+);
 export default authRoutes;

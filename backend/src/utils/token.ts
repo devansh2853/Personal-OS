@@ -8,6 +8,11 @@ export const generateRefreshToken = (): string => {
   return token;
 };
 
+export const generateEmailVerificationToken = (): string => {
+  const token = randomBytes(32).toString("hex");
+  return token;
+};
+
 export const generateAccessToken = (userId: Types.ObjectId): string => {
   const payload = {
     sub: userId,

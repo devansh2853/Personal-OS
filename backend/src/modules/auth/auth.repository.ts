@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { ClientSession, Types } from "mongoose";
 import {
   AuthAccountCreationDTO,
   RefreshTokenCreationDTO,
@@ -22,8 +22,14 @@ export class AuthRepository {
     return authAccount;
   }
 
-  async create(authAccountData: AuthAccountCreationDTO): Promise<AuthDocument> {
-    const authAccount: AuthDocument = await authModel.create(authAccountData);
+  async create(
+    authAccountData: AuthAccountCreationDTO,
+    session?: ClientSession,
+  ): Promise<AuthDocument> {
+    const [authAccount]: AuthDocument[] = await authModel.create(
+      [authAccountData],
+      { session },
+    );
     return authAccount;
   }
 
@@ -32,6 +38,39 @@ export class AuthRepository {
       userId: userId,
     });
     return authAccount;
+  }
+
+  async verifyEmail(id: Types.ObjectId) {
+    return await authModel.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          isVerified: true,
+          emailVerificationTokenHash: null,
+          emailVerificationTokenExpiresAt: null,
+        },
+      },
+      { new: true },
+    );
+  }
+
+  async updateEmailVerificationTokenById(
+    id: Types.ObjectId,
+    emailVerificationTokenHash: string,
+    emailVerificationTokenExpiresAt: Date,
+  ): Promise<AuthDocument | null> {
+    return await authModel.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          emailVerificationTokenHash,
+          emailVerificationTokenExpiresAt,
+        },
+      },
+      {
+        new: true,
+      },
+    );
   }
 }
 

@@ -9,12 +9,16 @@ export const toAuthAccountCreationDTO = (
   registrationDetails: RegisterRequestDTO,
   userId: Types.ObjectId,
   passwordHash: string,
+  emailVerificationTokenHash: string,
+  emailVerificationTokenExpiresAt: Date,
 ): AuthAccountCreationDTO => {
   return {
     email: registrationDetails.email,
     passwordHash: passwordHash,
     userId: userId,
     isVerified: false,
+    emailVerificationTokenHash,
+    emailVerificationTokenExpiresAt,
   };
 };
 
