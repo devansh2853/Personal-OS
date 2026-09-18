@@ -1,6 +1,6 @@
 import { ExerciseRepository } from "../exercise.repository.js";
-import { equipmentModel } from "../models/equipment.model.js";
-import { muscleGroupModel } from "../models/muscle-group.model.js";
+import { equipmentModel } from "../equipment/equipment.model.js";
+import { muscleGroupModel } from "../muscle-group/muscle-group.model.js";
 import {
   ExerciseReferenceMaps,
   mapExerciseToImportData,

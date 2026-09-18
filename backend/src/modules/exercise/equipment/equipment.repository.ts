@@ -1,8 +1,5 @@
 import { Types } from "mongoose";
-import {
-  EquipmentDocument,
-  equipmentModel,
-} from "../models/equipment.model.js";
+import { EquipmentDocument, equipmentModel } from "./equipment.model.js";
 
 export class EquipmentRepository {
   public async findById(id: Types.ObjectId): Promise<EquipmentDocument | null> {

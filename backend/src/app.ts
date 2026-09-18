@@ -7,6 +7,7 @@ import authRoutes from "./modules/auth/auth.routes.js";
 import cookieParser from "cookie-parser";
 import exerciseRoutes from "./modules/exercise/exercise.routes.js";
 import equipmentRoutes from "./modules/exercise/equipment/equipment.routes.js";
+import muscleGroupRoutes from "./modules/exercise/muscle-group/muscle-group.routes.js";
 
 const app = express();
 
@@ -21,4 +22,5 @@ app.use("/user", userRoutes);
 app.use("/auth", authRoutes);
 app.use("/api/exercise", exerciseRoutes);
 app.use("/api/equipment", equipmentRoutes);
+app.use("/api/muscle-groups", muscleGroupRoutes);
 export default app;

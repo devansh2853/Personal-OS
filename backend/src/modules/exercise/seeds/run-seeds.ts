@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import connectDatabase from "../../../config/database.js";
-import { equipmentModel } from "../models/equipment.model.js";
-import { muscleGroupModel } from "../models/muscle-group.model.js";
+import { equipmentModel } from "../equipment/equipment.model.js";
+import { muscleGroupModel } from "../muscle-group/muscle-group.model.js";
 import { equipment } from "./equipments.seed.js";
 import { muscleGroups } from "./muscle-groups.seed.js";
 import { configDotenv } from "dotenv";

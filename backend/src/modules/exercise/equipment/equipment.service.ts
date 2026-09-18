@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 import { AppError } from "../../../errors/app.error.js";
-import { EquipmentDocument } from "../models/equipment.model.js";
+import { EquipmentDocument } from "./equipment.model.js";
 import { EquipmentRepository } from "./equipment.repository.js";
 import { EquipmentResponseDTO } from "./equipment.dtos.js";
 
