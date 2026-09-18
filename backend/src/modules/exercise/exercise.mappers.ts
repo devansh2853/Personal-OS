@@ -1,5 +1,7 @@
 import {
   ExerciseDetailResponseDTO,
+  ExerciseListItemResponseDTO,
+  ExerciseListItemWithReferences,
   ExerciseReference,
   ExerciseReferenceDTO,
   ExerciseWithReferences,
@@ -40,3 +42,16 @@ export const toExerciseDetailResponseDTO = (
   imageUrls: exercise.imageUrls,
   instructionalVideoUrl: exercise.instructionalVideoUrl,
 });
+
+export const toExerciseListResponseDTO = (
+  exercise: ExerciseListItemWithReferences,
+): ExerciseListItemResponseDTO => {
+  return {
+    id: exercise._id.toString(),
+    name: exercise.name,
+    level: exercise.level,
+    category: exercise.category,
+    primaryMuscleGroups: exercise.primaryMuscleGroups,
+    equipment: exercise.equipment,
+  };
+};

@@ -7,10 +7,9 @@ import {
   extractRefreshToken,
   verifyJWT,
 } from "../../middleware/auth.middleware.js";
-import { EmailService } from "../email/email.service.js";
-import { ResendEmailProvider } from "../email/providers/resend.email.provider.js";
+import { EmailService } from "../../utils/email/email.service.js";
 import { AppError } from "../../errors/app.error.js";
-import { GmailEmailProvider } from "../email/providers/gmail.email.provider.js";
+import { GmailEmailProvider } from "../../utils/email/providers/gmail.email.provider.js";
 import { TransactionManager } from "../../config/transaction.manager.js";
 
 const authRoutes = Router();

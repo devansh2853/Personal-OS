@@ -84,5 +84,3 @@ const userSchema = new Schema(
 export const userModel = model("user", userSchema);
 // export type UserDocument = HydratedDocument<typeof userSchema>;
 export type UserDocument = HydratedDocument<InferSchemaType<typeof userSchema>>;
-
-console.log("User collection:", userModel.collection.name);

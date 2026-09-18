@@ -1,4 +1,3 @@
-import { UserNotFoundError } from "../user/user.errors.js";
 import { toUserCreationDTO, toUserResponseDTO } from "../user/user.mapper.js";
 import { UserDocument } from "../user/user.model.js";
 import { UserRepository } from "../user/user.repository.js";
@@ -23,7 +22,7 @@ import {
   generateRefreshToken,
 } from "../../utils/token.js";
 import { Types } from "mongoose";
-import { EmailService } from "../email/email.service.js";
+import { EmailService } from "../../utils/email/email.service.js";
 import { AppError } from "../../errors/app.error.js";
 import { TransactionManager } from "../../config/transaction.manager.js";
 
@@ -108,7 +107,7 @@ export class AuthService {
       authAccount.userId,
     );
     if (!user) {
-      throw new UserNotFoundError();
+      throw new AppError(404, "User Not Found");
     }
     const refreshTokenString: string = generateRefreshToken();
     const hashedToken: string = await hashSecret(refreshTokenString);

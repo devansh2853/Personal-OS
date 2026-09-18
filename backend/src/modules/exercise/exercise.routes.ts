@@ -8,6 +8,12 @@ const exerciseRoutes = Router();
 const exerciseRepository = new ExerciseRepository();
 const exerciseService = new ExerciseService(exerciseRepository);
 const exerciseController = new ExerciseController(exerciseService);
+
+exerciseRoutes.get(
+  "/",
+  exerciseController.getExercises.bind(exerciseController),
+);
+
 exerciseRoutes.get(
   "/:id",
   exerciseController.getExercise.bind(exerciseController),

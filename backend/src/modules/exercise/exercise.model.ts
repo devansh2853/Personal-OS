@@ -6,7 +6,7 @@ import {
   ExerciseLevel,
   ExerciseMechanic,
   WeightType,
-} from "../exercise.enums.js";
+} from "./exercise.enums.js";
 
 const exerciseSchema = new Schema(
   {

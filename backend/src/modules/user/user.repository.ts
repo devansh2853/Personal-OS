@@ -1,5 +1,5 @@
 import { ClientSession, Types } from "mongoose";
-import { UserCreationDTO } from "./user.dto.js";
+import { UserCreationDTO, UserUpdationRequestDTO } from "./user.dto.js";
 import { UserDocument, userModel } from "./user.model.js";
 
 export class UserRepository {
@@ -22,5 +22,17 @@ export class UserRepository {
       session,
     });
     return user;
+  }
+
+  async updateById(
+    userId: Types.ObjectId,
+    updateData: UserUpdationRequestDTO,
+  ): Promise<UserDocument | null> {
+    const updatedUser: UserDocument | null = await userModel.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true },
+    );
+    return updatedUser;
   }
 }

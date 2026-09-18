@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import { ExerciseAttrs } from "./models/exercise.model.js";
+import { ExerciseAttrs } from "./exercise.model.js";
 
 // exercise.dtos.ts
 export interface ExerciseReference {
@@ -31,6 +31,12 @@ export type ExerciseWithReferences = ExercisePublicAttrs & {
   equipment: ExerciseReference[];
 };
 
+export type ExerciseListItemWithReferences = ExercisePublicAttrs & {
+  _id: Types.ObjectId;
+  primaryMuscleGroups: ExerciseReference[];
+  equipment: ExerciseReference[];
+};
+
 export interface ExerciseReferenceDTO {
   id: string;
   name: string;
@@ -46,3 +52,28 @@ export type ExerciseDetailResponseDTO = Omit<
   secondaryMuscleGroups: ExerciseReferenceDTO[];
   equipment: ExerciseReferenceDTO[];
 };
+
+export interface ExercisesRequestDTO {
+  name?: string;
+  primaryMuscleGroupId?: string;
+  equipmentId?: string;
+  page?: string;
+  size?: string;
+}
+
+export interface ExerciseFilters {
+  name?: string;
+  primaryMuscleGroupId?: Types.ObjectId;
+  equipmentId?: Types.ObjectId;
+  page: number;
+  size: number;
+}
+
+export interface ExerciseListItemResponseDTO {
+  id: string;
+  name: string;
+  level: string;
+  category: string;
+  primaryMuscleGroups: ExerciseReference[];
+  equipment: ExerciseReference[];
+}
